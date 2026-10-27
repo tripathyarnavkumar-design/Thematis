@@ -876,7 +876,7 @@ body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!i
   <div class="dlg-b imp-b">
     <div class="imp-top"><div><b id="imp-file"></b><span class="hint" id="imp-sum"></span></div><span class="imp-links"><button class="linkbtn" type="button" id="imp-back" hidden>Change columns</button><button class="linkbtn" type="button" id="imp-all">Select all or none</button></span></div>
     <div id="imp-map" class="imp-map" hidden>
-      <p class="lead">Which column holds what? Choose for each column. Only the code column is needed; columns set to <b>Ignore</b> are left out, and missing descriptions or criteria stay blank.</p>
+      <p class="lead" id="map-lead"></p>
       <label class="chk"><input type="checkbox" id="map-head" checked> The first row has column names</label>
       <div class="map-wrap"><table class="map" id="map-table"></table></div>
       <span class="err" id="map-err" aria-live="polite"></span>
@@ -1966,8 +1966,7 @@ async function startImport(f){
     if(r.rows){
       const d=detectTable(r.rows);
       IMP={file:f.name,rows:r.rows,roles:d.roles.slice(),hasHead:d.head,hIdx:d.hIdx,step:'map'};
-      if(d.auto)toPick(tableToImport(r.rows,d.roles,true,d.hIdx));
-      else renderMap();
+      renderMap(); // always confirm the columns, starting from the detected choices
     }else{IMP={file:f.name,step:'pick'};toPick(r)}
     $('#dlg-imp').showModal();
   }catch(e){toast(e.message,true)}
@@ -1981,6 +1980,8 @@ function renderMap(err){
   const opts=sel=>Object.entries(ROLES).map(([k,v])=>`<option value="${k}"${k===sel?' selected':''}>${v}</option>`).join('');
   const show=rows.slice(start,start+7);
   $('#map-table').innerHTML=`<thead><tr>${Array.from({length:w},(_,j)=>`<th><select data-maprole="${j}" aria-label="Column ${j+1} contains">${opts(IMP.roles[j]||'skip')}</select></th>`).join('')}</tr></thead><tbody>${show.map((r,i)=>`<tr${IMP.hasHead&&i===0?' class="mh"':''}>${r.map((c,j)=>`<td class="${IMP.roles[j]==='skip'?'off':''}">${esc(clip(String(c),90))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  const found=IMP.roles.filter(r=>r!=='skip').length;
+  $('#map-lead').innerHTML=(found?'Check which column holds what. The choices below are a best guess from the column names; change any that are wrong.':'Choose what each column holds.')+' Only the <b>Code</b> column is needed. Columns set to <b>Ignore</b> are left out, and missing descriptions or criteria stay blank.';
   $('#map-err').textContent=err||'';
   $('#imp-go').textContent='Continue';$('#imp-go').disabled=false;
 }
