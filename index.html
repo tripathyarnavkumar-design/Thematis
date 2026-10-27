@@ -501,6 +501,16 @@ body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!i
 .chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer}
 .chk input,.irow input{width:16px;height:16px;accent-color:var(--acc);margin:0;flex:none}
 .imp-list{border:1px solid var(--ink);overflow:auto;max-height:min(46dvh,420px)}
+.imp-pickview,.imp-map{display:flex;flex-direction:column;gap:14px;min-height:0}
+.imp-pickview[hidden],.imp-map[hidden]{display:none}
+.imp-links{display:flex;gap:16px;flex-wrap:wrap}
+.map-wrap{overflow:auto;border:1px solid var(--ink);max-height:min(44dvh,380px)}
+.map{border-collapse:collapse;width:max-content;min-width:100%;font-size:12.5px}
+.map th{position:sticky;top:0;background:var(--field);padding:8px;border-bottom:1px solid var(--ink);text-transform:none;letter-spacing:0;font-weight:400}
+.map th select{height:30px;font-size:12.5px;min-width:150px;width:100%}
+.map td{padding:7px 10px;border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);vertical-align:top;max-width:260px;color:var(--ink-2);line-height:1.4}
+.map td.off{color:var(--ink-3);background:var(--field)}
+.map tr.mh td{font-weight:700;color:var(--ink)}
 .irow{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:12px;align-items:start;padding:10px 12px;border-bottom:1px solid var(--rule);cursor:pointer}
 .irow:last-child{border-bottom:0}
 .irow:hover{background:var(--hover)}
@@ -839,7 +849,7 @@ body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!i
 </dialog>
 
 <input type="file" id="json-in" accept=".json,application/json" hidden>
-<input type="file" id="codes-in" accept=".json,.csv,.tsv,.txt,.xlsx,.xls,.ods,application/json,text/csv" hidden>
+<input type="file" id="codes-in" accept=".csv,.tsv,.txt,.xlsx,.xls,.ods,.pdf,.json,application/pdf,application/json,text/csv" hidden>
 <dialog id="dlg-file" aria-labelledby="df-title">
   <form id="file-form" novalidate>
     <div class="dlg-h"><h2 id="df-title">File</h2><button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
@@ -864,14 +874,22 @@ body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!i
 <dialog id="dlg-imp" aria-labelledby="di-title">
   <div class="dlg-h"><h2 id="di-title">Import codes</h2><button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
   <div class="dlg-b imp-b">
-    <div class="imp-top"><div><b id="imp-file"></b><span class="hint" id="imp-sum"></span></div><button class="linkbtn" type="button" id="imp-all">Select all or none</button></div>
+    <div class="imp-top"><div><b id="imp-file"></b><span class="hint" id="imp-sum"></span></div><span class="imp-links"><button class="linkbtn" type="button" id="imp-back" hidden>Change columns</button><button class="linkbtn" type="button" id="imp-all">Select all or none</button></span></div>
+    <div id="imp-map" class="imp-map" hidden>
+      <p class="lead">Which column holds what? Choose for each column. Only the code column is needed; columns set to <b>Ignore</b> are left out, and missing descriptions or criteria stay blank.</p>
+      <label class="chk"><input type="checkbox" id="map-head" checked> The first row has column names</label>
+      <div class="map-wrap"><table class="map" id="map-table"></table></div>
+      <span class="err" id="map-err" aria-live="polite"></span>
+    </div>
+    <div id="imp-pickview" class="imp-pickview">
     <div class="row imp-opts">
       <div class="seg" role="radiogroup" aria-label="Codes that already exist" id="imp-dupopt"><label><input type="radio" name="impmode" value="skip" checked><span>Skip codes already here</span></label><label><input type="radio" name="impmode" value="update"><span>Update their definitions</span></label></div>
       <label class="chk" id="imp-themeopt"><input type="checkbox" id="imp-themes"> Also bring their themes</label>
     </div>
     <div class="imp-list" id="imp-list"></div>
+    </div>
   </div>
-  <div class="dlg-f"><span class="hint">Codes keep their definitions, criteria and colours.</span><div class="group"><button class="btn btn-line" type="button" data-close>Cancel</button><button class="btn btn-acc" type="button" id="imp-go">Import</button></div></div>
+  <div class="dlg-f"><span class="hint">Accepts .csv, .xlsx, .pdf, or a Thematis code set or project file.</span><div class="group"><button class="btn btn-line" type="button" data-close>Cancel</button><button class="btn btn-acc" type="button" id="imp-go">Import</button></div></div>
 </dialog>
 <div class="tip" id="tip" role="tooltip" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -1785,15 +1803,124 @@ function codesetJSON(){
     codes:sortCodes('az').map(c=>({name:c.name,definition:c.def,include:c.inc,exclude:c.exc,color:c.color,theme:c.theme||''})),
     themes:themeList().filter(t=>used.has(t.name)).map(t=>({name:t.name,definition:t.def,include:t.inc,exclude:t.exc,color:t.color}))},null,1);
 }
-let IMP=null; // {file, codes:[{name,def,inc,exc,color,theme}], themes:[...]}
+let IMP=null; // {file, rows?, roles?, hasHead?, codes, themes, pick, step:'map'|'pick'}
 const normName=s=>String(s||'').trim().replace(/\s+/g,' ');
-function codesFromRows(rows){
-  if(rows.length<2)throw new Error('The file has no rows of codes under a header row.');
-  const hd=rows[0].map(x=>String(x||'').trim().toLowerCase());
-  const col=re=>hd.findIndex(x=>re.test(x));
-  const iN=col(/^(code|codes|code name|name|label)$/),iD=col(/defin|descri|meaning/),iI=col(/incl/),iE=col(/excl/),iT=col(/^(theme|candidate theme|category)$/);
-  if(iN<0)throw new Error('No “Code” column found. The first row needs headings such as Code, Definition, Include when, Exclude when.');
-  return rows.slice(1).map(r=>({name:normName(r[iN]),def:iD<0?'':String(r[iD]||'').trim(),inc:iI<0?'':String(r[iI]||'').trim(),exc:iE<0?'':String(r[iE]||'').trim(),theme:iT<0?'':normName(r[iT])})).filter(c=>c.name);
+const ROLES={name:'Code',def:'Definition / description',inc:'Include when',exc:'Exclude when',theme:'Theme',skip:'Ignore'};
+function guessRole(h){
+  h=String(h||'').trim().toLowerCase().replace(/[*:]+$/,'').replace(/\s+/g,' ');
+  if(!h)return 'skip';
+  if(/\bexcl|(don.?t|do not|not to|never) (use|apply|code)|^not when|counter-?example/.test(h))return 'exc';
+  if(/\bincl|^(use|apply|code)( it| this)? when|^when to (use|apply)/.test(h))return 'inc';
+  if(/^(sub-?)?codes?( name| label| title)?$|^(name|label|code\/label)$/.test(h))return 'name';
+  if(/defin|descri|meaning|explanation|^what it (means|captures)|^(summary|notes?|memo|scope)$/.test(h))return 'def';
+  if(/^(main |parent |candidate |overarching )?(themes?|categor(y|ies)|groups?|domains?)( name)?$/.test(h))return 'theme';
+  return 'skip';
+}
+// Find the header row in the first rows and work out each column's role.
+function detectTable(rows){
+  let best={i:-1,roles:[],score:0};
+  rows.slice(0,8).forEach((r,i)=>{
+    const roles=r.map(guessRole),seen=new Set();
+    roles.forEach((x,j)=>{if(x!=='skip'){if(seen.has(x))roles[j]='skip';else seen.add(x)}}); // one column per role
+    const score=roles.filter(x=>x!=='skip').length+(roles.includes('name')?1:0);
+    if(score>best.score)best={i,roles,score};
+  });
+  const ok=best.i>=0&&best.roles.includes('name')&&(best.roles.includes('def')||best.roles.includes('inc')||best.roles.includes('exc'));
+  const r0=(rows[0]||[]).map(x=>String(x||'').trim()).filter(Boolean);
+  const looksHead=rows.length>1&&r0.length>=2&&!THEME_ROW.test(r0[0])&&r0.every(c=>c.split(/\s+/).length<=4&&c.length<=40);
+  const head=(best.i>=0&&best.score>=2)||looksHead;
+  const known=best.i>=0&&best.score>=2;
+  return ok?{hIdx:best.i,roles:best.roles,auto:true,head:true}:{hIdx:known?best.i:0,roles:known?best.roles:rows[0].map(()=>'skip'),auto:false,head};
+}
+const THEME_ROW=/^(?:main\s+|overarching\s+|candidate\s+)?theme\s*(?:\d+|[ivx]+)?\s*[:.\-–—)]\s*(.+)$/i;
+// Turn table rows into codes and themes, given what each column holds.
+function tableToImport(rows,roles,hasHead,hIdx){
+  const ix=r=>roles.indexOf(r),iN=ix('name'),iD=ix('def'),iI=ix('inc'),iE=ix('exc'),iT=ix('theme');
+  const head=hasHead?rows[hIdx].map(x=>normName(x).toLowerCase()):null;
+  const body=rows.slice(hasHead?hIdx+1:0).filter(r=>!(head&&r.map(x=>normName(x).toLowerCase()).join('|')===head.join('|')));
+  const cell=(r,i)=>i<0?'':String(r[i]??'').replace(/\r/g,'').trim();
+  const codes=[],themes=new Map();
+  // A theme book: one row per theme, with its codes listed in one cell.
+  const listy=iN>=0&&iT>=0&&body.filter(r=>/[;\n]/.test(cell(r,iN))).length>=Math.max(1,body.length*.4);
+  if(listy){
+    body.forEach(r=>{const t=normName(cell(r,iT));if(!t)return;
+      themes.set(t,{name:t,def:cell(r,iD),inc:cell(r,iI),exc:cell(r,iE)});
+      cell(r,iN).split(/\s*[;\n]\s*/).map(normName).filter(Boolean).forEach(n=>codes.push({name:n,def:'',inc:'',exc:'',theme:t}));});
+    return {codes,themes:[...themes.values()],kind:'themebook'};
+  }
+  // Merged theme cells (each theme written once, blanks below it) carry the theme down; otherwise a blank theme means none.
+  const tv=iT<0?[]:body.map(r=>normName(cell(r,iT))).filter(Boolean);
+  const merged=iT>=0&&tv.length>0&&new Set(tv).size===tv.length&&tv.length<body.filter(r=>cell(r,iN)).length;
+  let cur='';
+  body.forEach(r=>{
+    const n=cell(r,iN),filled=r.filter(x=>String(x??'').trim()).length;
+    const m=n.match(THEME_ROW)||(!n&&iN!==0?String(r[0]??'').trim().match(THEME_ROW):null);
+    if(m&&(filled<=2||iT<0)){ // a section row that names a theme
+      cur=normName(m[1]);if(!themes.has(cur))themes.set(cur,{name:cur,def:cell(r,iD),inc:cell(r,iI),exc:cell(r,iE)});return}
+    if(!n)return;
+    let t=iT>=0?normName(cell(r,iT)):'';
+    if(iT>=0&&!t)t=merged?cur:'';
+    else if(iT>=0)cur=t;
+    else t=cur;
+    codes.push({name:normName(n),def:cell(r,iD),inc:cell(r,iI),exc:cell(r,iE),theme:t});
+  });
+  return {codes,themes:[...themes.values()],kind:'codebook'};
+}
+// ---- PDF tables: rebuild rows and columns from text positions ----
+async function pdfItems(f){
+  if(!window.pdfjsLib){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'); // runs in this page; no separate worker needed
+  }
+  const lib=window.pdfjsLib;try{lib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}catch(e){}
+  const pdf=await lib.getDocument({data:new Uint8Array(await f.arrayBuffer()),isEvalSupported:false}).promise;
+  const pages=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const pg=await pdf.getPage(p),tc=await pg.getTextContent();
+    pages.push(tc.items.filter(it=>it.str&&it.str.trim()).map(it=>({s:it.str,x:it.transform[4],y:it.transform[5],w:it.width||0,h:Math.abs(it.transform[3])||it.height||9})));
+  }
+  return pages;
+}
+function itemsToRows(pages){
+  const lines=[];
+  pages.forEach((items,pi)=>{
+    const hs=items.map(i=>i.h).sort((a,b)=>a-b),hMed=hs[Math.floor(hs.length/2)]||9;
+    const sorted=items.slice().sort((a,b)=>b.y-a.y||a.x-b.x);
+    let cur=null;
+    sorted.forEach(it=>{
+      if(cur&&Math.abs(cur.y-it.y)<=hMed*.45)cur.items.push(it);
+      else{cur={page:pi,y:it.y,h:hMed,items:[it]};lines.push(cur)}
+    });
+  });
+  lines.forEach(l=>{l.items.sort((a,b)=>a.x-b.x);l.text=l.items.map(i=>i.s).join(' ').replace(/\s+/g,' ').trim()});
+  const isFooter=l=>/(^|·\s*)page\s+\d+(\s+of\s+\d+)?\s*$/i.test(l.text);
+  // Cells in a line: items separated by a clear horizontal gap.
+  const cellsOf=l=>{const out=[];l.items.forEach(it=>{const last=out[out.length-1];
+    if(last&&it.x-(last.x2)<=l.h*1.2){last.s+=(it.x-last.x2>l.h*.15?' ':'')+it.s;last.x2=it.x+it.w}else out.push({x:it.x,x2:it.x+it.w,s:it.s})});
+    return out.map(c=>({x:c.x,s:c.s.trim()}))};
+  // Header: the line whose cells look most like column names.
+  let hi=-1,hs=0;
+  lines.forEach((l,i)=>{if(i>60&&hi>=0)return;const c=cellsOf(l);if(c.length<2)return;const s=c.filter(x=>guessRole(x.s)!=='skip').length;if(s>hs){hs=s;hi=i}});
+  if(hi<0){ // no recognisable header: use the line with the most cells
+    let m=0;lines.forEach((l,i)=>{const n=cellsOf(l).length;if(n>m){m=n;hi=i}});
+  }
+  if(hi<0)return [];
+  const head=cellsOf(lines[hi]),anchors=head.map(c=>c.x),headTxt=lines[hi].text;
+  const colOf=x=>{let k=0;anchors.forEach((a,j)=>{if(x>=a-3)k=j});return k};
+  const rows=[head.map(c=>c.s)];
+  let row=null,prev=null;
+  for(let i=hi+1;i<lines.length;i++){
+    const l=lines[i];
+    if(isFooter(l)||l.text===headTxt){prev=null;continue}
+    const cells=Array(anchors.length).fill('');
+    l.items.forEach(it=>{const k=colOf(it.x);cells[k]=(cells[k]?cells[k]+' ':'')+it.s});
+    const gap=prev&&prev.page===l.page?prev.y-l.y:Infinity;
+    const newRow=!row||(cells[0].trim()&&gap>l.h*1.75)||gap===Infinity&&cells[0].trim();
+    if(newRow){row=cells.map(s=>s.trim());rows.push(row)}
+    else cells.forEach((s,k)=>{if(s.trim())row[k]=(row[k]?row[k]+' ':'')+s.trim()});
+    prev=l;
+  }
+  return rows.map(r=>r.map(s=>s.replace(/\s+/g,' ').replace(/(\w)- (\w)/g,'$1$2').trim()));
 }
 function codesFromJSON(o){
   const pick=(x)=>({name:normName(x.name),def:String(x.definition??x.def??'').trim(),inc:String(x.include??x.inc??'').trim(),exc:String(x.exclude??x.exc??'').trim(),color:x.color,theme:normName(x.theme||'')});
@@ -1803,41 +1930,80 @@ function codesFromJSON(o){
   }
   throw new Error('This JSON file has no codes in it. Choose a code set or a project file saved from Thematis.');
 }
+const padRows=rows=>{const w=Math.max(0,...rows.map(r=>r.length));return rows.map(r=>Array.from({length:w},(_,i)=>String(r[i]??'')))};
 async function readCodesFile(f){
   const ext=(f.name.split('.').pop()||'').toLowerCase();
   if(ext==='json'){let o;try{o=JSON.parse(await f.text())}catch(e){throw new Error(`${f.name} isn’t valid JSON.`)}return codesFromJSON(o)}
-  if(ext==='csv'||ext==='tsv'||ext==='txt'){const t=(await f.text()).replace(/^﻿/,'');return {codes:codesFromRows(parseDelim(t,ext==='tsv'||(ext==='txt'&&t.includes('\t'))?'\t':',')),themes:[]}}
-  if(['xlsx','xls','ods'].includes(ext)){
+  let rows;
+  if(ext==='csv'||ext==='tsv'||ext==='txt'){const t=(await f.text()).replace(/^﻿/,'');rows=parseDelim(t,ext==='tsv'||(ext!=='csv'&&t.includes('\t'))?'\t':',')}
+  else if(['xlsx','xls','ods'].includes(ext)){
     if(!window.XLSX)throw new Error('The Excel reader did not load. Save the sheet as .csv and import that.');
     const wb=window.XLSX.read(await f.arrayBuffer(),{type:'array'});
-    const rows=window.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:''}).filter(r=>r.some(x=>String(x).trim()));
-    return {codes:codesFromRows(rows),themes:[]};
+    const sheets=wb.SheetNames.map(n=>window.XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:false,defval:''}).filter(r=>r.some(x=>String(x).trim())));
+    rows=sheets.find(r=>r.length>1&&detectTable(padRows(r)).auto)||sheets.sort((a,b)=>b.length-a.length)[0]||[];
   }
-  throw new Error(`${f.name} isn’t a supported format. Use a Thematis code set (.json), a project file, or a codebook as .csv or .xlsx.`);
+  else if(ext==='pdf'){
+    let pages;try{pages=await pdfItems(f)}catch(e){throw new Error('The PDF reader did not load, or the PDF could not be opened. Check your connection, or export the table as .csv or .xlsx.')}
+    if(!pages.some(p=>p.length))throw new Error(`${f.name} has no selectable text. It may be a scanned image; export the table as .csv or .xlsx instead.`);
+    rows=itemsToRows(pages);
+  }
+  else throw new Error(`${f.name} isn’t a supported format. Use a table as .csv, .xlsx or .pdf, or a Thematis code set or project file.`);
+  rows=padRows(rows.filter(r=>r.some(x=>String(x??'').trim())));
+  if(rows.length<1||rows[0].length<1)throw new Error(`No table found in ${f.name}.`);
+  return {rows};
+}
+const dedupe=list=>{const seen=new Set();return list.filter(c=>{const k=c.name.toLowerCase();if(seen.has(k))return false;seen.add(k);return true})};
+function toPick(r){
+  IMP.codes=dedupe(r.codes);IMP.themes=r.themes||[];IMP.kind=r.kind||'';
+  if(!IMP.codes.length){IMP.step='map';renderMap('No codes were found with these choices. Check which column holds the code names.');return}
+  IMP.pick=new Set(IMP.codes.map((_,i)=>i));IMP.step='pick';
+  $('#imp-themes').checked=IMP.codes.some(c=>c.theme);
+  renderImport();
 }
 async function startImport(f){
   try{
     const r=await readCodesFile(f);
-    const seen=new Set();r.codes=r.codes.filter(c=>{const k=c.name.toLowerCase();if(seen.has(k))return false;seen.add(k);return true});
-    if(!r.codes.length)throw new Error(`No codes found in ${f.name}.`);
-    IMP={file:f.name,...r,pick:new Set(r.codes.map((_,i)=>i))};
-    renderImport();$('#dlg-imp').showModal();
+    if(r.rows){
+      const d=detectTable(r.rows);
+      IMP={file:f.name,rows:r.rows,roles:d.roles.slice(),hasHead:d.head,hIdx:d.hIdx,step:'map'};
+      if(d.auto)toPick(tableToImport(r.rows,d.roles,true,d.hIdx));
+      else renderMap();
+    }else{IMP={file:f.name,step:'pick'};toPick(r)}
+    $('#dlg-imp').showModal();
   }catch(e){toast(e.message,true)}
 }
+function renderMap(err){
+  $('#imp-map').hidden=false;$('#imp-pickview').hidden=true;$('#imp-all').hidden=true;$('#imp-back').hidden=true;
+  $('#imp-file').textContent=IMP.file;
+  const rows=IMP.rows,w=rows[0].length,start=IMP.hasHead?IMP.hIdx:0;
+  $('#imp-sum').textContent=`A table with ${plural(w,'column')} and ${plural(rows.length-(IMP.hasHead?IMP.hIdx+1:0),'row')}`;
+  $('#map-head').checked=IMP.hasHead;
+  const opts=sel=>Object.entries(ROLES).map(([k,v])=>`<option value="${k}"${k===sel?' selected':''}>${v}</option>`).join('');
+  const show=rows.slice(start,start+7);
+  $('#map-table').innerHTML=`<thead><tr>${Array.from({length:w},(_,j)=>`<th><select data-maprole="${j}" aria-label="Column ${j+1} contains">${opts(IMP.roles[j]||'skip')}</select></th>`).join('')}</tr></thead><tbody>${show.map((r,i)=>`<tr${IMP.hasHead&&i===0?' class="mh"':''}>${r.map((c,j)=>`<td class="${IMP.roles[j]==='skip'?'off':''}">${esc(clip(String(c),90))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  $('#map-err').textContent=err||'';
+  $('#imp-go').textContent='Continue';$('#imp-go').disabled=false;
+}
 function renderImport(){
+  $('#imp-map').hidden=true;$('#imp-pickview').hidden=false;$('#imp-all').hidden=false;$('#imp-back').hidden=!IMP.rows;
   const ex=n=>S.codes.find(c=>c.name.toLowerCase()===n.toLowerCase());
   const mode=$('input[name=impmode]:checked')?.value||'skip';
   const withThemes=$('#imp-themes').checked;
   const nThemes=new Set(IMP.codes.map(c=>c.theme).filter(Boolean)).size;
   $('#imp-file').textContent=IMP.file;
   const dup=IMP.codes.filter(c=>ex(c.name)).length;
-  $('#imp-sum').textContent=`${plural(IMP.codes.length,'code')} found${dup?` · ${dup} already in this project`:''}${nThemes?` · ${plural(nThemes,'theme')}`:''}`;
+  $('#imp-sum').textContent=`${plural(IMP.codes.length,'code')} found${nThemes?` in ${plural(nThemes,'theme')}`:''}${dup?` · ${dup} already in this project`:''}${IMP.kind==='themebook'?' · read as a theme book':''}`;
   $('#imp-dupopt').hidden=!dup;$('#imp-themeopt').hidden=!nThemes;
-  $('#imp-list').innerHTML=IMP.codes.map((c,i)=>{const e=ex(c.name),miss=!c.def||!c.inc||!c.exc;
+  $('#imp-list').innerHTML=IMP.codes.map((c,i)=>{const e=ex(c.name),miss=[!c.def&&'definition',!c.inc&&'inclusion',!c.exc&&'exclusion'].filter(Boolean);
     const st=e?(mode==='update'?'<span class="ist up">Updates existing</span>':'<span class="ist skip">Already here, skipped</span>'):'<span class="ist new">New</span>';
-    return `<label class="irow${e&&mode==='skip'?' off':''}"><input type="checkbox" data-imp="${i}"${IMP.pick.has(i)?' checked':''}${e&&mode==='skip'?' disabled':''}><span class="imp-n"><b>${esc(c.name)}</b>${withThemes&&c.theme?`<span class="ith">${esc(c.theme)}</span>`:''}<span class="idef">${esc(clip(c.def||'No definition in the file',150))}</span>${miss?'<span class="imiss">Some criteria are missing. Add them later with Edit.</span>':''}</span>${st}</label>`}).join('');
+    return `<label class="irow${e&&mode==='skip'?' off':''}"><input type="checkbox" data-imp="${i}"${IMP.pick.has(i)?' checked':''}${e&&mode==='skip'?' disabled':''}><span class="imp-n"><b>${esc(c.name)}</b>${withThemes&&c.theme?`<span class="ith">${esc(c.theme)}</span>`:''}<span class="idef">${c.def?esc(clip(c.def,150)):'<span class="muted">No definition in the file</span>'}</span>${miss.length&&c.def?`<span class="imiss">No ${miss.join(' or ')} criteria in the file; left blank.</span>`:''}</span>${st}</label>`}).join('');
   const n=importable().length;
   $('#imp-go').textContent=n?`Import ${plural(n,'code')}`:'Nothing to import';$('#imp-go').disabled=!n;
+}
+function mapContinue(){
+  const r=IMP.roles;
+  if(!r.includes('name')){$('#map-err').textContent='Choose which column holds the code names.';return}
+  toPick(tableToImport(IMP.rows,r,IMP.hasHead,IMP.hIdx));
 }
 function importable(){
   const mode=$('input[name=impmode]:checked')?.value||'skip';
@@ -1863,11 +2029,16 @@ function doImport(){
 }
 $('#codes-in').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(f)await startImport(f)});
 $('#dlg-imp').addEventListener('change',e=>{
-  const i=e.target.dataset.imp;if(i!=null){e.target.checked?IMP.pick.add(+i):IMP.pick.delete(+i)}
+  if(!IMP)return;const t=e.target;
+  if(t.dataset.maprole!=null){const j=+t.dataset.maprole,v=t.value;if(v!=='skip')IMP.roles=IMP.roles.map((r,k)=>k!==j&&r===v?'skip':r);IMP.roles[j]=v;renderMap();return}
+  if(t.id==='map-head'){IMP.hasHead=t.checked;if(t.checked&&IMP.roles.every(r=>r==='skip'))IMP.roles=IMP.rows[IMP.hIdx].map(guessRole);renderMap();return}
+  const i=t.dataset.imp;if(i!=null){t.checked?IMP.pick.add(+i):IMP.pick.delete(+i)}
   renderImport();
 });
+$('#imp-back').addEventListener('click',()=>{IMP.step='map';renderMap()});
+if(window.__THEMATIS_TEST)window.__th={itemsToRows,detectTable,tableToImport,guessRole};
 $('#imp-all').addEventListener('click',()=>{const all=IMP.pick.size<IMP.codes.length;IMP.pick=new Set(all?IMP.codes.map((_,i)=>i):[]);renderImport()});
-$('#imp-go').addEventListener('click',doImport);
+$('#imp-go').addEventListener('click',()=>{if(IMP&&IMP.step==='map')mapContinue();else doImport()});
 
 /* ---------- View and edit a project file ---------- */
 let fileId=null;
