@@ -1,4 +1,4 @@
-<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Thematis</title><meta name="description" content="Thematic analysis in your browser: code transcripts, survey responses and field notes, build themes, and export a codebook and report."><meta property="og:type" content="website"><meta property="og:site_name" content="Thematis"><meta property="og:title" content="Thematis"><meta property="og:description" content="Thematic analysis in your browser: code transcripts, survey responses and field notes, build themes, and export a codebook and report."><meta property="og:url" content="https://thematis.pages.dev/"><meta property="og:image" content="https://thematis.pages.dev/og.jpg"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Thematis coding a remote-work interview, with highlighted passages and a list of codes"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Thematis"><meta name="twitter:description" content="Thematic analysis in your browser: code transcripts, survey responses and field notes, build themes, and export a codebook and report."><meta name="twitter:image" content="https://thematis.pages.dev/og.jpg"><link rel="canonical" href="https://thematis.pages.dev/"><meta name="color-scheme" content="light"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2.5' width='7.5' height='7.5' fill='%23111'/%3E%3Crect x='2' y='14' width='7.5' height='7.5' fill='%23E8590C'/%3E%3Cpath d='M9.5 6.25 15 10.5M9.5 17.75 15 13.5' stroke='%23111' stroke-width='1.6' fill='none'/%3E%3Ccircle cx='17.5' cy='12' r='4.5' fill='%230B6E79'/%3E%3C/svg%3E">
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Thematis</title><meta name="description" content="Thematic analysis in your browser: code transcripts, survey responses and field notes, build themes, and export a codebook and report."><meta property="og:type" content="website"><meta property="og:site_name" content="Thematis"><meta property="og:title" content="Thematis"><meta property="og:description" content="Thematic analysis in your browser: code transcripts, survey responses and field notes, build themes, and export a codebook and report."><meta property="og:url" content="https://thematis.pages.dev/"><meta property="og:image" content="https://thematis.pages.dev/og.jpg"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Thematis coding a remote-work interview, with highlighted passages and a list of codes"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Thematis"><meta name="twitter:description" content="Thematic analysis in your browser: code transcripts, survey responses and field notes, build themes, and export a codebook and report."><meta name="twitter:image" content="https://thematis.pages.dev/og.jpg"><link rel="canonical" href="https://thematis.pages.dev/"><meta name="color-scheme" content="only light"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2.5' width='7.5' height='7.5' fill='%23111'/%3E%3Crect x='2' y='14' width='7.5' height='7.5' fill='%23E8590C'/%3E%3Cpath d='M9.5 6.25 15 10.5M9.5 17.75 15 13.5' stroke='%23111' stroke-width='1.6' fill='none'/%3E%3Ccircle cx='17.5' cy='12' r='4.5' fill='%234F46E5'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -13,29 +13,18 @@
    ===================================================================== */
 :root{
   --paper:#FFFFFF; --ink:#111111; --ink-2:#4A4A4A; --ink-3:#6E6E6E; --rule:#DADADA; --rule-strong:#111111;
-  --field:#F3F3F3; --hover:#F0F0F0; --acc:#0B6E79; --acc-ink:#08545C; --on-acc:#FFFFFF; --tint:#E3F4F5;
+  --field:#F3F3F3; --hover:#F0F0F0; --acc:#4F46E5; --acc-ink:#4338CA; --on-acc:#FFFFFF; --tint:#EEF0FF;
   --bad:#C2261D; --bad-bg:#FBE4E2; --ok:#0B7A43;
-  --mast-bg:#0A0A0A; --mast-fg:#FFFFFF; --mast-dim:#A1A1AA; --mast-line:#3F3F46; --mast-acc:#5CC8D2;
+  --mast-bg:#0A0A0A; --mast-fg:#FFFFFF; --mast-dim:#A1A1AA; --mast-line:#3F3F46; --mast-acc:#818CF8;
   --shadow:0 14px 36px rgba(0,0,0,.16); --scrim:rgba(10,10,10,.45);
   --c0:#E8590C; --c1:#2F9E44; --c2:#1C7ED6; --c3:#AE3EC9; --c4:#E67700; --c5:#D6336C; --c6:#5C940D; --c7:#7048E8; --c8:#C92A2A; --c9:#8D5524;
   --hlmix:22%;
   --face:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
   --mast:56px; --gut:24px; --pad:clamp(16px,2.2vw,44px); --rail:clamp(260px,22vw,340px);
   --ease-out:cubic-bezier(.23,1,.32,1);
-  color-scheme:light;
+  color-scheme:only light;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --paper:#0E0E0E; --ink:#F2F2F2; --ink-2:#C4C4C4; --ink-3:#9A9A9A; --rule:#2E2E2E; --rule-strong:#F2F2F2;
-  --field:#1B1B1B; --hover:#1E1E1E; --acc:#5CC8D2; --acc-ink:#8EDDE3; --on-acc:#062A2E; --tint:#11292B;
-  --bad:#F2716A; --bad-bg:#331716; --ok:#3CC47C; --shadow:0 14px 36px rgba(0,0,0,.6); --scrim:rgba(0,0,0,.6);
-  --c0:#FF8A4C; --c1:#51CF66; --c2:#4DABF7; --c3:#DA77F2; --c4:#FFC078; --c5:#F783AC; --c6:#A9E34B; --c7:#9775FA; --c8:#FF6B6B; --c9:#D19A6A;
-  --hlmix:30%; color-scheme:dark } }
-:root[data-theme="dark"]{
-  --paper:#0E0E0E; --ink:#F2F2F2; --ink-2:#C4C4C4; --ink-3:#9A9A9A; --rule:#2E2E2E; --rule-strong:#F2F2F2;
-  --field:#1B1B1B; --hover:#1E1E1E; --acc:#5CC8D2; --acc-ink:#8EDDE3; --on-acc:#062A2E; --tint:#11292B;
-  --bad:#F2716A; --bad-bg:#331716; --ok:#3CC47C; --shadow:0 14px 36px rgba(0,0,0,.6); --scrim:rgba(0,0,0,.6);
-  --c0:#FF8A4C; --c1:#51CF66; --c2:#4DABF7; --c3:#DA77F2; --c4:#FFC078; --c5:#F783AC; --c6:#A9E34B; --c7:#9775FA; --c8:#FF6B6B; --c9:#D19A6A;
-  --hlmix:30%; color-scheme:dark }
+
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -204,7 +193,7 @@ textarea.mono{font-family:var(--mono);font-size:12px}
 .step-ln{width:24px;height:2px;background:var(--mast-line);margin:0 8px;flex:none}
 .step-ln.done{background:var(--mast-acc)}
 .mast-x{margin-left:12px;height:34px;background:var(--mast-acc);color:var(--mast-bg);border:0;flex:none}
-.mast-x:hover{background:#8EDDE3}
+.mast-x:hover{background:#A5B4FC}
 .mast :focus-visible{outline-color:var(--mast-fg)}
 
 /* ---------- Shared workspace pieces ---------- */
@@ -645,7 +634,7 @@ body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!i
 <!-- ================= Workspace ================= -->
 <div id="app" hidden>
   <header class="mast" id="mast">
-    <button class="mark" id="m-home" type="button" aria-label="Start over"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2.5" width="7.5" height="7.5" fill="#FFFFFF"/><rect x="2" y="14" width="7.5" height="7.5" fill="#FF8A4C"/><path d="M9.5 6.25 15 10.5M9.5 17.75 15 13.5" stroke="#FFFFFF" stroke-width="1.6" fill="none"/><circle cx="17.5" cy="12" r="4.5" fill="#5CC8D2"/></svg>Thematis</button>
+    <button class="mark" id="m-home" type="button" aria-label="Start over"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2.5" width="7.5" height="7.5" fill="#FFFFFF"/><rect x="2" y="14" width="7.5" height="7.5" fill="#FF8A4C"/><path d="M9.5 6.25 15 10.5M9.5 17.75 15 13.5" stroke="#FFFFFF" stroke-width="1.6" fill="none"/><circle cx="17.5" cy="12" r="4.5" fill="#818CF8"/></svg>Thematis</button>
     <span class="mast-note" id="m-hint"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M9 2.5 4.5 7 9 11.5"/></svg>Click the logo to start over</span>
     <span class="mast-note" id="m-saved"></span>
     <nav class="steps" aria-label="Steps">
@@ -1426,7 +1415,7 @@ function renderSwatches(sel){
   $('#f-colors').innerHTML=Array.from({length:NCOL},(_,i)=>`<label style="--k:var(--c${i})"><input type="radio" name="fcol" value="${i}"${String(i)===sel?' checked':''} aria-label="Colour ${i+1}"><span></span></label>`).join('')
     +(cust.length?'<i class="sep" aria-hidden="true"></i>':'')
     +cust.map(hex=>`<label style="--k:${esc(hex)}"><input type="radio" name="fcol" value="${esc(hex)}"${hex===sel?' checked':''} aria-label="Custom colour ${esc(hex)}"><span></span></label>`).join('')
-    +`<label class="add" title="Add a custom colour"><input type="color" id="f-custom" value="#0b6e79" aria-label="Add a custom colour"><span>${ICON_PLUS}</span></label>`;
+    +`<label class="add" title="Add a custom colour"><input type="color" id="f-custom" value="#4f46e5" aria-label="Add a custom colour"><span>${ICON_PLUS}</span></label>`;
 }
 $('#f-colors').addEventListener('change',e=>{
   if(e.target.id!=='f-custom')return;
