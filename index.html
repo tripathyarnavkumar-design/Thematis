@@ -504,22 +504,14 @@ body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!i
 .imp-pickview,.imp-map{display:flex;flex-direction:column;gap:14px;min-height:0}
 .imp-pickview[hidden],.imp-map[hidden]{display:none}
 .imp-links{display:flex;gap:16px;flex-wrap:wrap}
-.map-wrap{overflow:auto;border:1px solid var(--ink);max-height:min(50dvh,440px)}
-.map{border-collapse:collapse;width:100%;font-size:13px}
-.map th{position:sticky;top:0;z-index:1;background:var(--ink);color:var(--paper);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.map td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:middle;line-height:1.4}
-.map tr:last-child td{border-bottom:0}
-.map tr.off td{background:var(--field)}
-.map tr.off .mc b,.map tr.off .me{color:var(--ink-3)}
-.map .mc{width:30%;min-width:160px}
-.map .mc b{font-weight:700;overflow-wrap:anywhere}
-.map .mn{display:inline-grid;place-items:center;width:20px;height:20px;margin-right:8px;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);border:1px solid var(--rule);vertical-align:1px}
-.map .me{color:var(--ink-2)}
-.map .me span{display:block;overflow-wrap:anywhere}
-.map .me span+span{margin-top:3px}
-.map .mu{width:210px}
-.map .mu select{height:32px;width:100%}
-@media (max-width:640px){.map,.map tbody,.map tr,.map td{display:block;width:100%;min-width:0}.map thead{display:none}.map tr{border-bottom:1px solid var(--rule);padding:4px 0}.map td{border:0;padding:5px 12px}}
+.map-wrap{overflow:auto;border:1px solid var(--ink);max-height:min(46dvh,400px)}
+.map{border-collapse:collapse;width:max-content;min-width:100%;font-size:12.5px}
+.map th{position:sticky;top:0;z-index:1;background:var(--field);padding:8px;border-bottom:1px solid var(--ink);text-align:left;font-weight:400}
+.map th select{height:30px;font-size:12.5px;min-width:160px;width:100%}
+.map td{padding:7px 10px;border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);vertical-align:top;max-width:260px;color:var(--ink-2);line-height:1.4}
+.map td.off{color:var(--ink-3);background:var(--field)}
+.map tr.mh td{font-weight:700;color:var(--ink)}
+.map tr.mh td.off{color:var(--ink-3)}
 .irow{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:12px;align-items:start;padding:10px 12px;border-bottom:1px solid var(--rule);cursor:pointer}
 .irow:last-child{border-bottom:0}
 .irow:hover{background:var(--hover)}
@@ -886,8 +878,8 @@ body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!i
     <div class="imp-top"><div><b id="imp-file"></b><span class="hint" id="imp-sum"></span></div><span class="imp-links"><button class="linkbtn" type="button" id="imp-back" hidden>Change columns</button><button class="linkbtn" type="button" id="imp-all">Select all or none</button></span></div>
     <div id="imp-map" class="imp-map" hidden>
       <p class="lead" id="map-lead"></p>
+      <label class="chk"><input type="checkbox" id="map-head" checked> The first row has column names</label>
       <div class="map-wrap"><table class="map" id="map-table"></table></div>
-      <label class="chk"><input type="checkbox" id="map-head" checked> The first row of the file has column names</label>
       <span class="err" id="map-err" aria-live="polite"></span>
     </div>
     <div id="imp-pickview" class="imp-pickview">
@@ -1984,16 +1976,14 @@ function renderMap(err){
   $('#imp-map').hidden=false;$('#imp-pickview').hidden=true;$('#imp-all').hidden=true;$('#imp-back').hidden=true;
   $('#di-title').textContent='Which column holds what?';
   $('#imp-file').textContent=IMP.file;
-  const rows=IMP.rows,w=rows[0].length,start=IMP.hasHead?IMP.hIdx+1:0,data=rows.slice(start);
-  $('#imp-sum').textContent=`${plural(w,'column')} · ${plural(data.filter(r=>r.some(x=>String(x).trim())).length,'row')}`;
+  const rows=IMP.rows,w=rows[0].length,start=IMP.hasHead?IMP.hIdx:0;
+  $('#imp-sum').textContent=`${plural(w,'column')} · ${plural(rows.length-(IMP.hasHead?IMP.hIdx+1:0),'row')}`;
   $('#map-head').checked=IMP.hasHead;
   const opts=sel=>Object.entries(ROLES).map(([k,v])=>`<option value="${k}"${k===sel?' selected':''}>${v}</option>`).join('');
-  const ex=j=>data.map(r=>String(r[j]??'').trim()).filter(Boolean).slice(0,2);
-  $('#map-table').innerHTML=`<thead><tr><th>Column in your file</th><th>Example values</th><th>Use as</th></tr></thead><tbody>${Array.from({length:w},(_,j)=>{
-    const name=IMP.hasHead?String(rows[IMP.hIdx][j]??'').trim():'',e=ex(j),r=IMP.roles[j]||'skip';
-    return `<tr class="${r==='skip'?'off':''}"><td class="mc"><span class="mn">${String.fromCharCode(65+j%26)}</span>${name?`<b>${esc(name)}</b>`:'<span class="muted">No column name</span>'}</td><td class="me">${e.length?e.map(v=>`<span>${esc(clip(v,80))}</span>`).join(''):'<span class="muted">Empty</span>'}</td><td class="mu"><select data-maprole="${j}" aria-label="Use column ${name?esc(name):String.fromCharCode(65+j%26)} as">${opts(r)}</select></td></tr>`}).join('')}</tbody>`;
+  const show=rows.slice(start,start+7);
+  $('#map-table').innerHTML=`<thead><tr>${Array.from({length:w},(_,j)=>`<th><select data-maprole="${j}" aria-label="Column ${j+1} contains">${opts(IMP.roles[j]||'skip')}</select></th>`).join('')}</tr></thead><tbody>${show.map((r,i)=>`<tr${IMP.hasHead&&i===0?' class="mh"':''}>${r.map((c,j)=>`<td class="${IMP.roles[j]==='skip'?'off':''}">${esc(clip(String(c),90))}</td>`).join('')}</tr>`).join('')}</tbody>`;
   const found=IMP.roles.filter(r=>r!=='skip').length;
-  $('#map-lead').innerHTML=(found?'Choose what each column of your codebook holds. Choices are pre-filled from the column names; change any that are wrong.':'Choose what each column of your codebook holds.')+' Only <b>Code</b> is needed. Columns set to <b>Ignore</b> are left out, and missing descriptions or criteria stay blank.';
+  $('#map-lead').innerHTML=(found?'Use the menu above each column to say what it holds. Choices are pre-filled from the column names; change any that are wrong.':'Use the menu above each column to say what it holds.')+' Only <b>Code</b> is needed. Columns set to <b>Ignore</b> are left out, and missing descriptions or criteria stay blank.';
   $('#map-err').textContent=err||'';
   $('#imp-go').textContent='Continue';$('#imp-go').disabled=false;
 }
